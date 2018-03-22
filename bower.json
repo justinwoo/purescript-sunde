@@ -1,0 +1,23 @@
+{
+  "name": "purescript-sunde",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/justinwoo/purescript-sunde.git"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-aff": "^4.0.2",
+    "purescript-node-child-process": "^4.0.0",
+    "purescript-eff": "^3.2.0",
+    "purescript-prelude": "^3.1.1"
+  },
+  "devDependencies": {
+    "purescript-test-unit": "^13.0.0"
+  }
+}
