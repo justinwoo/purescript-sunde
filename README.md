@@ -17,7 +17,7 @@ import Sunde as S
 main = runTest do
   suite "Sunde" do
     test "works with ls" do
-      result <- S.spawn "ls" [] CP.defaultSpawnOptions
+      result <- S.spawn { cmd: "ls", args: [], stdin: Nothing } CP.defaultSpawnOptions
       Assert.equal (show result.exit) "Normally 0"
       Assert.assert "stdout is not empty" $ String.length result.stdout > 0
       Assert.assert "stderr is empty" $ String.length result.stderr == 0
