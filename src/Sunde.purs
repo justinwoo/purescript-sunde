@@ -41,8 +41,8 @@ spawn' encoding killSignal {cmd, args, stdin} options = makeAff \cb -> do
   case stdin of
     Just input -> do
       let write = CP.stdin process
-      void $ NS.writeString write UTF8 input do
-        NS.end write mempty
+      void $ NS.writeString write UTF8 input \_ -> do
+        NS.end write (\_ -> mempty)
     Nothing -> pure unit
 
   onDataString (CP.stdout process) encoding \string ->
