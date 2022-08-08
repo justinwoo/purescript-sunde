@@ -1,0 +1,26 @@
+{
+  "name": "purescript-sunde",
+  "version": "1.0.0",
+  "description": "[![Build Status](https://travis-ci.org/justinwoo/purescript-sunde.svg?branch=master)](https://travis-ci.org/justinwoo/purescript-sunde)",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "bower": "^1.8.14",
+    "pulp": "^16.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/justinwoo/purescript-sunde.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/justinwoo/purescript-sunde/issues"
+  },
+  "homepage": "https://github.com/justinwoo/purescript-sunde#readme"
+}
