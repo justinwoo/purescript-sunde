@@ -2,60 +2,62 @@ module Sunde where
 
 import Prelude
 
+import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Foldable (for_)
+import Data.Maybe (Maybe)
 import Data.Posix.Signal (Signal(..))
 import Effect.Aff (Aff, effectCanceler, makeAff)
-import Effect.Ref (modify_, new, read)
+import Effect.Ref as Ref
+import Node.Buffer as Buffer
 import Node.ChildProcess as CP
+import Node.ChildProcess.Types (Exit)
 import Node.Encoding (Encoding(..))
-import Node.Stream (onDataString)
+import Node.Errors.SystemError as SystemError
+import Node.EventEmitter as EventEmitter
 import Node.Stream as NS
 
 spawn
   :: { cmd :: String, args :: Array String, stdin :: Maybe String }
-  -> CP.SpawnOptions
+  -> (CP.SpawnOptions -> CP.SpawnOptions)
   -> Aff
-      { stdout :: String
-      , stderr :: String
-      , exit :: CP.Exit
-      }
+       { stdout :: String
+       , stderr :: String
+       , exit :: Exit
+       }
 spawn = spawn' UTF8 SIGTERM
 
 spawn'
   :: Encoding
   -> Signal
   -> { cmd :: String, args :: Array String, stdin :: Maybe String }
-  -> CP.SpawnOptions
+  -> (CP.SpawnOptions -> CP.SpawnOptions)
   -> Aff
-      { stdout :: String
-      , stderr :: String
-      , exit :: CP.Exit
-      }
-spawn' encoding killSignal {cmd, args, stdin} options = makeAff \cb -> do
-  stdoutRef <- new ""
-  stderrRef <- new ""
+       { stdout :: String
+       , stderr :: String
+       , exit :: Exit
+       }
+spawn' encoding killSignal { cmd, args, stdin } modifyOptions = makeAff \cb -> do
+  stdoutRef <- Ref.new []
+  stderrRef <- Ref.new []
 
-  process <- CP.spawn cmd args options
+  process <- CP.spawn' cmd args modifyOptions
 
-  case stdin of
-    Just input -> do
-      let write = CP.stdin process
-      void $ NS.writeString write UTF8 input \_ -> do
-        NS.end write (\_ -> mempty)
-    Nothing -> pure unit
+  for_ stdin \input -> do
+    let writable = CP.stdin process
+    void $ NS.writeString writable UTF8 input
+    NS.end writable
 
-  onDataString (CP.stdout process) encoding \string ->
-    modify_ (_ <> string) stdoutRef
+  CP.stdout process # EventEmitter.on_ NS.dataH \buf ->
+    Ref.modify_ (\ref' -> Array.snoc ref' buf) stdoutRef
+  CP.stderr process # EventEmitter.on_ NS.dataH \buf ->
+    Ref.modify_ (\ref' -> Array.snoc ref' buf) stderrRef
 
-  onDataString (CP.stderr process) encoding \string ->
-    modify_ (_ <> string) stderrRef
+  process # EventEmitter.once_ CP.errorH (cb <<< Left <<< SystemError.toError)
 
-  CP.onError process $ cb <<< Left <<< CP.toStandardError
+  process # EventEmitter.once_ CP.exitH \exit -> do
+    stdout <- Buffer.toString encoding =<< Buffer.concat =<< Ref.read stdoutRef
+    stderr <- Buffer.toString encoding =<< Buffer.concat =<< Ref.read stderrRef
+    cb <<< pure $ { stdout, stderr, exit }
 
-  CP.onExit process \exit -> do
-    stdout <- read stdoutRef
-    stderr <- read stderrRef
-    cb <<< pure $ {stdout, stderr, exit}
-
-  pure <<< effectCanceler <<< void $ CP.kill killSignal process
+  pure <<< effectCanceler <<< void $ CP.killSignal killSignal process
