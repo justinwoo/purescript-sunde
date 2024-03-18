@@ -3,8 +3,9 @@ sudo: required
 dist: trusty
 node_js: stable
 install:
-  - npm install -g purescript pulp bower
+  - npm install -g purescript spago@next purs-tidy
 script:
   - npm install
-  - bower install
-  - pulp test
+  - spago install
+  - spago test --pedantic-packages
+  - purs-tidy check src test
